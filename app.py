@@ -7,19 +7,20 @@ st.set_page_config(
     page_title="COSMIC COMMAND: FINAL",
     page_icon="🚀",
     layout="centered",
-    initial_sidebar_state="expanded" # This opens the Left Sidebar automatically
+    initial_sidebar_state="expanded"
 )
 
-# --- 1. SOUND ENGINE ---
+# --- 1. SOUND ENGINE (SPECIFIC ALERTS ONLY) ---
 def play_sound(sound_type):
     if not st.session_state.get('sound_on', True): return
 
     sounds = {
+        # Initiating / Restart
         "start": "https://www.soundjay.com/buttons/button-10.mp3",
-        "scan": "https://www.soundjay.com/buttons/beep-01a.mp3",
+        # Target Unlocked / Excellent
         "win": "https://www.soundjay.com/misc/success-bell-01.mp3",
-        "error": "https://www.soundjay.com/buttons/button-42.mp3",
-        "ping": "https://www.soundjay.com/buttons/button-30.mp3"
+        # Error (only for critical failures)
+        "error": "https://www.soundjay.com/buttons/button-42.mp3"
     }
     if sound_type in sounds:
         st.markdown(f"""
@@ -28,7 +29,7 @@ def play_sound(sound_type):
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 2. CSS STYLING (SLIDER FIXED) ---
+# --- 2. CSS STYLING ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
@@ -62,13 +63,13 @@ st.markdown("""
         box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
     }
     
-    /* BIG GREEN WINNER TEXT */
+    /* WINNER TEXT */
     .winner-text {
         color: #39ff14 !important;
-        font-size: 42px !important;
+        font-size: 45px !important;
         font-weight: 900 !important;
         text-shadow: 0 0 20px #39ff14;
-        animation: pulse 1s infinite;
+        animation: pulse 0.5s infinite;
     }
     @keyframes pulse {
         0% { transform: scale(1); }
@@ -93,8 +94,7 @@ st.markdown("""
         box-shadow: 0 0 20px #00f0ff;
     }
 
-    /* --- SLIDER FIX --- */
-    /* This makes the slider handle (thumb) big and visible */
+    /* SLIDER FIX */
     div[data-testid="stThumbValue"] { font-family: 'Rajdhani', sans-serif !important; font-size: 14px; }
     div[role="slider"] { background-color: #00f0ff !important; border: 2px solid white; height: 20px; width: 20px; }
     
@@ -144,23 +144,24 @@ def get_feedback(guess, target):
     else: return "NO SIGNAL (FAR)", "#bf00ff", "error"
 
 def scan(guess):
-    # Scan Animation
-    with st.spinner("ANALYZING FREQUENCY..."):
-        time.sleep(0.2) 
-
-    # Low Cost Scanning
-    cost = 2
-    if st.session_state.mode == "SURVIVAL": cost = 5
-    st.session_state.fuel -= cost
-    
-    # Win Check
+    # --- INSTANT WIN CHECK (NO DELAY) ---
     if guess == st.session_state.target:
         st.session_state.msg_main = "YOU GUESSED IT RIGHT!"
         st.session_state.msg_sub = f"TARGET LOCKED: {st.session_state.target} // EXCELLENT WORK"
         st.session_state.color = "#39ff14"
         st.session_state.sound = "win"
-        st.balloons()
+        st.balloons() # The Party!
+        st.snow()     # Extra Confetti!
         return
+
+    # Only delay if it's NOT a win (for suspense)
+    with st.spinner("ANALYZING..."):
+        time.sleep(0.15) 
+
+    # Low Cost Scanning
+    cost = 2
+    if st.session_state.mode == "SURVIVAL": cost = 5
+    st.session_state.fuel -= cost
 
     # Loss Check
     if st.session_state.fuel <= 0:
@@ -180,7 +181,8 @@ def scan(guess):
     st.session_state.msg_main = main
     st.session_state.msg_sub = sub
     st.session_state.color = col
-    st.session_state.sound = snd
+    # We suppress the scan sound here to keep it quiet as requested
+    # Only "Win" and "Error" sounds play now.
 
 def buy_intel():
     if st.session_state.fuel >= 10:
@@ -190,34 +192,29 @@ def buy_intel():
         sector = "1-50" if tgt <= 50 else "51-100"
         if st.session_state.max_val > 100 and tgt > 100: sector = "101-150"
         st.session_state.intel_txt = f"💡 INTEL: Number is {parity} & in Sector {sector}"
-        st.session_state.sound = "ping"
     else:
         st.session_state.intel_txt = "❌ NOT ENOUGH FUEL (Need 10%)"
         st.session_state.sound = "error"
 
 # --- 5. UI LAYOUT ---
 
-# --- SIDEBAR (LEFT MENU) ---
+# --- LEFT MENU (SIMPLIFIED) ---
 with st.sidebar:
-    st.markdown("## 🚀 COMMAND DECK")
-    st.write("---")
+    st.markdown("## 🚀 MENU")
     
-    # Toggle Sound
-    st.session_state.sound_on = st.toggle("🔊 SOUND EFFECTS", value=True)
+    st.session_state.sound_on = st.toggle("🔊 SOUNDS", value=True)
     
     st.write("---")
-    
-    # Reset
     if st.button("🔄 RESTART GAME"):
         st.session_state.game_active = False
+        st.session_state.sound = "start"
         st.rerun()
 
-    st.markdown("### 📘 MISSION BRIEF")
+    st.markdown("### 📝 MISSION BRIEF")
     st.info("""
-    1. **Scan Frequencies** using the Slider.
-    2. **Hot/Cold** hints guide you to the target.
-    3. **Fuel** drops by 2% per scan.
-    4. **Win** by finding the exact number!
+    * **Objective:** Find the hidden number.
+    * **Hot/Cold:** Guides you closer.
+    * **Win:** Get "Target Unlocked!"
     """)
 
 # --- MAIN SCREEN ---
@@ -244,7 +241,7 @@ else:
         st.markdown(f"""
         <div class='cosmic-display' style='border-color: #39ff14; box-shadow: 0 0 40px #39ff14;'>
             <div class='winner-text'>{st.session_state.msg_main}</div>
-            <div style='color: #fff; letter-spacing: 2px; margin-top: 10px;'>{st.session_state.msg_sub}</div>
+            <div style='color: #fff; letter-spacing: 2px; margin-top: 10px; font-size: 20px;'>{st.session_state.msg_sub}</div>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -274,7 +271,6 @@ else:
         # INPUTS
         guess = 50
         if st.session_state.input_type == "SLIDER":
-            # Native Slider - Fixed Visibility
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
