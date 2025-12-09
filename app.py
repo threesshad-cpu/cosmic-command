@@ -4,21 +4,24 @@ import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="COSMIC COMMAND: GAME EDITION",
-    page_icon="🎮",
+    page_title="COSMIC COMMAND: ELITE",
+    page_icon="🌌",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"  # Opens sidebar by default
 )
 
 # --- 1. SOUND ENGINE ---
 def play_sound(sound_type):
-    # Reliable hosted sound effects
+    # Check if sound is enabled in sidebar
+    if not st.session_state.get('sound_on', True):
+        return
+
     sounds = {
-        "start": "https://www.soundjay.com/buttons/button-10.mp3",       # Restart/Boot
-        "scan": "https://www.soundjay.com/buttons/beep-01a.mp3",        # Scanning
-        "win": "https://www.soundjay.com/misc/success-bell-01.mp3",     # Excellent/Unlocked
-        "error": "https://www.soundjay.com/buttons/button-42.mp3",      # Fail
-        "ping": "https://www.soundjay.com/buttons/button-30.mp3"        # Intel
+        "start": "https://www.soundjay.com/buttons/button-10.mp3",
+        "scan": "https://www.soundjay.com/buttons/beep-01a.mp3",
+        "win": "https://www.soundjay.com/misc/success-bell-01.mp3",
+        "error": "https://www.soundjay.com/buttons/button-42.mp3",
+        "ping": "https://www.soundjay.com/buttons/button-30.mp3"
     }
     if sound_type in sounds:
         st.markdown(f"""
@@ -40,7 +43,7 @@ st.markdown("""
             radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
         background-size: 550px 550px, 350px 350px;
         background-position: 0 0, 40px 60px;
-        animation: star-move 100s linear infinite;
+        animation: star-move 120s linear infinite;
     }
     @keyframes star-move {
         from { background-position: 0 0, 40px 60px; }
@@ -49,7 +52,13 @@ st.markdown("""
 
     /* FONTS */
     h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
-    div, button, p { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; }
+    div, button, p, li, span { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; }
+
+    /* SIDEBAR STYLING */
+    section[data-testid="stSidebar"] {
+        background-color: rgba(10, 10, 15, 0.95);
+        border-right: 1px solid #00f0ff;
+    }
 
     /* DISPLAY BOX */
     .cosmic-display {
@@ -97,7 +106,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. GAME STATE ---
+# --- 3. STATE INITIALIZATION ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
@@ -109,13 +118,13 @@ if 'intel_txt' not in st.session_state: st.session_state.intel_txt = ""
 if 'sound' not in st.session_state: st.session_state.sound = None
 if 'mode' not in st.session_state: st.session_state.mode = "EXPLORATION"
 if 'max_val' not in st.session_state: st.session_state.max_val = 100
+if 'sound_on' not in st.session_state: st.session_state.sound_on = True
 
 # --- 4. GAME LOGIC ---
 def start_game(mode):
     st.session_state.game_active = True
     st.session_state.mode = mode
     
-    # Difficulty Settings
     if mode == "EXPLORATION": st.session_state.max_val = 100
     elif mode == "SURVIVAL": st.session_state.max_val = 100
     elif mode == "QUANTUM": st.session_state.max_val = 150
@@ -126,26 +135,27 @@ def start_game(mode):
     st.session_state.msg_sub = "ENTER FREQUENCY"
     st.session_state.color = "#00f0ff"
     st.session_state.intel_txt = ""
-    st.session_state.sound = "start" # Initiating Sound
+    st.session_state.sound = "start"
 
 def get_feedback(guess, target):
     diff = abs(target - guess)
-    # EASIER DIFFICULTY LOGIC
+    
+    # --- EASIER LOGIC ZONES ---
     if diff == 0: return "YOU GUESSED IT RIGHT!", "#39ff14", "win"
-    elif diff <= 2: return "CRITICAL (HOT!!)", "#ff073a", "scan"
-    elif diff <= 8: return "VERY CLOSE (HOT)", "#ff4500", "scan" # Widened from 5 to 8
-    elif diff <= 15: return "SIGNAL DETECTED (WARM)", "#ffd700", "scan" # Widened from 10 to 15
-    elif diff <= 25: return "WEAK SIGNAL (COOL)", "#00bfff", "scan"
+    elif diff <= 3: return "CRITICAL (BURNING HOT!!)", "#ff073a", "scan" # Wider Critical
+    elif diff <= 12: return "VERY CLOSE (HOT)", "#ff4500", "scan"     # Huge Hot Zone (was 8)
+    elif diff <= 25: return "SIGNAL DETECTED (WARM)", "#ffd700", "scan" # Huge Warm Zone (was 15)
+    elif diff <= 40: return "WEAK SIGNAL (COOL)", "#00bfff", "scan"     # Huge Cool Zone
     else: return "NO SIGNAL (FAR)", "#bf00ff", "error"
 
 def scan(guess):
-    # Juicier Animation
-    with st.spinner("ANALYZING FREQUENCY..."):
-        time.sleep(0.3)
+    # Simple Animation
+    with st.spinner("ANALYZING..."):
+        time.sleep(0.2) # Faster scan
 
-    # EASIER FUEL COST
-    cost = 3 # Reduced from 5
-    if st.session_state.mode == "SURVIVAL": cost = 8
+    # --- EASIER FUEL COST ---
+    cost = 2 # Reduced from 3
+    if st.session_state.mode == "SURVIVAL": cost = 5
     
     st.session_state.fuel -= cost
     
@@ -154,7 +164,7 @@ def scan(guess):
         st.session_state.msg_main = "YOU GUESSED IT RIGHT!"
         st.session_state.msg_sub = f"TARGET: {st.session_state.target} // EXCELLENT WORK"
         st.session_state.color = "#39ff14"
-        st.session_state.sound = "win" # Success Sound
+        st.session_state.sound = "win"
         st.balloons()
         return
 
@@ -169,7 +179,7 @@ def scan(guess):
     # Feedback
     main, col, snd = get_feedback(guess, st.session_state.target)
     
-    # Helpful Direction
+    # Direction Hint
     if guess < st.session_state.target: sub = "TRY HIGHER ↑"
     elif guess > st.session_state.target: sub = "TRY LOWER ↓"
     else: sub = ""
@@ -180,11 +190,11 @@ def scan(guess):
     st.session_state.sound = snd
 
 def buy_intel():
-    if st.session_state.fuel >= 15:
-        st.session_state.fuel -= 15
+    # --- CHEAPER INTEL ---
+    if st.session_state.fuel >= 10: # Reduced from 15
+        st.session_state.fuel -= 10
         tgt = st.session_state.target
         
-        # Easy Intel
         parity = "EVEN" if tgt % 2 == 0 else "ODD"
         sector = "1-50" if tgt <= 50 else "51-100"
         if st.session_state.max_val > 100 and tgt > 100: sector = "101-150"
@@ -192,12 +202,36 @@ def buy_intel():
         st.session_state.intel_txt = f"💡 INTEL: Number is {parity} & in Sector {sector}"
         st.session_state.sound = "ping"
     else:
-        st.session_state.intel_txt = "❌ NOT ENOUGH FUEL"
+        st.session_state.intel_txt = "❌ NOT ENOUGH FUEL (Need 10%)"
         st.session_state.sound = "error"
 
-# --- 5. UI RENDER ---
+# --- 5. UI LAYOUT ---
 
-# Sound Trigger
+# --- LEFT SIDEBAR ---
+with st.sidebar:
+    st.markdown("## ⚙️ MISSION SETTINGS")
+    
+    st.session_state.sound_on = st.toggle("🔊 SOUND EFFECTS", value=True)
+    
+    st.markdown("---")
+    st.markdown("### 📘 HOW TO PLAY")
+    st.info("""
+    1. **Guess the Number** (1-100).
+    2. Watch the **Heat Signals**:
+       - 🔴 **HOT**: You are very close!
+       - 🟡 **WARM**: Getting closer.
+       - 🔵 **COOL**: Far away.
+    3. Watch your **Fuel**. Every scan costs 2%.
+    4. **Buy Intel** if you get stuck.
+    """)
+    
+    st.markdown("---")
+    if st.button("🔄 FORCE RESET"):
+        st.session_state.game_active = False
+        st.rerun()
+
+# --- MAIN CONTENT ---
+
 if st.session_state.sound:
     play_sound(st.session_state.sound)
     st.session_state.sound = None
@@ -205,7 +239,7 @@ if st.session_state.sound:
 st.markdown("<h1 style='text-align:center; color:#00f0ff;'>COSMIC COMMAND</h1>", unsafe_allow_html=True)
 
 if not st.session_state.game_active:
-    # --- MENU ---
+    # MENU
     st.markdown("<h3 style='text-align:center; color:#666;'>SELECT DIFFICULTY</h3>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     if c1.button("EXPLORE (EASY)"): start_game("EXPLORATION")
@@ -213,10 +247,7 @@ if not st.session_state.game_active:
     if c3.button("QUANTUM (CHAOS)"): start_game("QUANTUM")
 
 else:
-    # --- GAME BOARD ---
-    
-    # 1. DISPLAY SCREEN
-    # If Won, show giant text
+    # GAME DISPLAY
     if "RIGHT" in st.session_state.msg_main:
         st.markdown(f"""
         <div class='cosmic-display' style='border-color: #39ff14;'>
@@ -225,7 +256,6 @@ else:
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Normal Display
         st.markdown(f"""
         <div class='cosmic-display' style='border-color: {st.session_state.color};'>
             <h2 style='color: {st.session_state.color}; margin:0; font-size:36px;'>{st.session_state.msg_main}</h2>
@@ -233,37 +263,33 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-    # 2. FUEL BAR
+    # FUEL BAR
     fuel_pct = max(0, st.session_state.fuel) / 100.0
     st.progress(fuel_pct)
     st.caption(f"HYPERFUEL: {max(0, st.session_state.fuel)}%")
 
-    # 3. CONTROLS (Hide if Game Over)
+    # CONTROLS
     if st.session_state.fuel > 0 and "RIGHT" not in st.session_state.msg_main:
         st.write("---")
         
-        # Toggle
         c_tog1, c_tog2 = st.columns(2)
         if c_tog1.button("🎚️ SLIDER"): st.session_state.input_type = "SLIDER"
         if c_tog2.button("⌨️ KEYPAD"): st.session_state.input_type = "KEYPAD"
         
-        # Input
         guess = 50
         if st.session_state.input_type == "SLIDER":
             guess = st.slider("FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("COORDINATES", 1, st.session_state.max_val, 50)
 
-        # Actions
         c_act1, c_act2 = st.columns([2,1])
         with c_act1:
             if st.button("INITIATE SCAN", type="primary"):
                 scan(guess)
         with c_act2:
-            if st.button("BUY INTEL (-15)"):
+            if st.button("BUY INTEL (-10)"):
                 buy_intel()
 
-        # Hints
         if st.session_state.intel_txt:
             st.info(st.session_state.intel_txt)
 
@@ -273,7 +299,6 @@ else:
             st.rerun()
             
     else:
-        # RESTART BUTTON (Appears on Win or Loss)
         st.write("---")
         if st.button("🔄 REBOOT SYSTEM (PLAY AGAIN)"):
             st.session_state.game_active = False
