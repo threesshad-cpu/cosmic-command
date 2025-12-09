@@ -24,10 +24,13 @@ st.markdown("""
 # --- LOTTIE LOADER ---
 @st.cache_data
 def load_lottieurl(url):
-    r = requests.get(url)
-    if r.status_code != 200:
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
         return None
-    return r.json()
 
 # Load Assets (Trophy/Celebration)
 lottie_win = load_lottieurl("https://lottie.host/5a889895-c543-4c92-95d4-42b78d262740/JgYl7O5r0r.json")
@@ -154,6 +157,19 @@ def start_game(mode, fuel):
 if st.session_state.page == "HOME":
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>🌌 COSMIC COMMAND</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: #aaa;'>SELECT YOUR MISSION PROFILE</h3>", unsafe_allow_html=True)
+    
+    # --- INSTRUCTION BOX (RESTORED HERE) ---
+    with st.expander("📋 MISSION BRIEFING (READ ME)", expanded=True):
+        st.markdown("""
+        **OBJECTIVE:** Locate the hidden frequency target (1-100).
+        
+        **1. 📡 SCAN:** Use the slider or buttons to choose a frequency and click **INITIATE SCAN**.
+        **2. 🌡️ FEEDBACK:** - **HOT/RED:** You are very close to the target.
+           - **COLD/BLUE:** You are far away.
+           - **INTEL:** The system will tell you if the target is HIGHER ⬆️ or LOWER ⬇️.
+        **3. ⛽ FUEL:** Every scan costs fuel. If fuel hits 0%, mission failed.
+        """)
+    
     st.write("---")
     
     c1, c2, c3 = st.columns(3)
