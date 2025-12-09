@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 1. PARTY POPPER ENGINE (JAVASCRIPT) ---
+# --- 1. JAVASCRIPT PARTY POPPER (GLITCH-FREE) ---
 def trigger_party_mode():
     components.html(
         """
@@ -51,12 +51,12 @@ def play_sound(sound_type):
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 3. CSS STYLING (SAFE MODE) ---
+# --- 3. CSS STYLING (SAFE MODE - NO SLIDER HACKS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
 
-    /* BACKGROUND */
+    /* BACKGROUND ANIMATION */
     .stApp {
         background-color: #050508;
         background-image: 
@@ -74,12 +74,12 @@ st.markdown("""
     h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
     div, p, button, span, li { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; letter-spacing: 1px; }
 
-    /* ICON FIX */
+    /* ICON FONT FIX */
     .material-icons, .st-emotion-cache-1pbqdg3, .st-emotion-cache-10trblm, i {
         font-family: sans-serif !important; 
     }
 
-    /* NEON DISPLAY */
+    /* NEON DISPLAY BOX */
     .cosmic-display {
         background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 20, 30, 0.95));
         border: 2px solid #00f0ff;
@@ -104,7 +104,7 @@ st.markdown("""
         100% { transform: scale(1); }
     }
 
-    /* BUTTONS */
+    /* CUSTOM BUTTONS */
     div.stButton > button {
         background: #0a0a0f;
         color: #00f0ff;
@@ -121,11 +121,12 @@ st.markdown("""
         box-shadow: 0 0 20px #00f0ff;
     }
     
+    /* HIDE DEFAULT HEADER */
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. STATE ---
+# --- 4. SESSION STATE ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
@@ -139,7 +140,7 @@ if 'max_val' not in st.session_state: st.session_state.max_val = 100
 if 'sound_on' not in st.session_state: st.session_state.sound_on = True
 if 'trigger_party' not in st.session_state: st.session_state.trigger_party = False
 
-# --- 5. LOGIC ---
+# --- 5. GAME LOGIC ---
 def start_game(mode):
     st.session_state.game_active = True
     st.session_state.mode = mode
@@ -214,7 +215,7 @@ def buy_intel():
 
 # --- 6. UI RENDERING ---
 
-# SIDEBAR
+# SIDEBAR MENU
 with st.sidebar:
     st.markdown("## 🚀 MENU")
     st.session_state.sound_on = st.toggle("🔊 SOUNDS", value=True)
@@ -232,11 +233,12 @@ with st.sidebar:
     4. **Win:** Get "Target Unlocked!"
     """)
 
-# MAIN SCREEN
+# SOUND PLAYER
 if st.session_state.sound:
     play_sound(st.session_state.sound)
     st.session_state.sound = None
 
+# CONFETTI PLAYER
 if st.session_state.trigger_party:
     trigger_party_mode()
     st.session_state.trigger_party = False
@@ -275,15 +277,13 @@ else:
     if st.session_state.fuel > 0 and "RIGHT" not in st.session_state.msg_main:
         st.write("---")
         
-        # --- INPUT SWITCHER (RADIO BUTTONS) ---
-        # This is clearer than buttons and persists state better
+        # RADIO BUTTON INPUT SWITCHER
         input_mode = st.radio("SELECT INPUT METHOD:", ["🎚️ SLIDER", "⌨️ KEYPAD"], horizontal=True)
         
         st.write("")
         
         guess = 50
         if input_mode == "🎚️ SLIDER":
-            # Native Streamlit Slider - No custom CSS to break it
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
