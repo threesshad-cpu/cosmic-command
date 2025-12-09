@@ -4,15 +4,17 @@ import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="COSMIC COMMAND: ELITE",
-    page_icon="🌌",
+    page_title="COSMIC COMMAND: FINAL",
+    page_icon="🚀",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
 # --- 1. SOUND ENGINE ---
 def play_sound(sound_type):
-    if not st.session_state.get('sound_on', True): return
+    # Only play if sound is ON
+    if not st.session_state.get('sound_on', True):
+        return
 
     sounds = {
         "start": "https://www.soundjay.com/buttons/button-10.mp3",
@@ -28,12 +30,13 @@ def play_sound(sound_type):
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 2. CSS STYLING (FIXED SLIDER) ---
+# --- 2. CSS STYLING (SAFE VERSION) ---
 st.markdown("""
     <style>
+    /* IMPORT FONTS */
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
 
-    /* BACKGROUND */
+    /* BACKGROUND ANIMATION */
     .stApp {
         background-color: #050508;
         background-image: 
@@ -47,16 +50,11 @@ st.markdown("""
         to { background-position: 1000px 1000px, 1040px 1060px; }
     }
 
-    /* FONTS - Applied carefully to avoid breaking icons */
+    /* TEXT STYLING */
     h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
-    div, p, button { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; }
-    
-    /* Fix for Streamlit Icons (prevent them from turning into text) */
-    .material-icons, .st-emotion-cache-1pbqdg3, .st-emotion-cache-10trblm {
-        font-family: sans-serif !important; 
-    }
+    div, p, button, span { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; letter-spacing: 1px; }
 
-    /* NEON DISPLAY */
+    /* NEON DISPLAY BOX */
     .cosmic-display {
         background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 20, 30, 0.95));
         border: 2px solid #00f0ff;
@@ -66,15 +64,32 @@ st.markdown("""
         margin-bottom: 20px;
         box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
     }
+    
+    /* WINNER TEXT STYLE */
+    .winner-box {
+        border-color: #39ff14 !important;
+        box-shadow: 0 0 30px #39ff14 !important;
+    }
+    .winner-text {
+        color: #39ff14 !important;
+        font-size: 40px !important;
+        text-shadow: 0 0 20px #39ff14;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
 
-    /* BUTTONS */
+    /* CUSTOM BUTTONS */
     div.stButton > button {
         background: #0a0a0f;
         color: #00f0ff;
         border: 1px solid #00f0ff;
         width: 100%;
         border-radius: 5px;
-        padding: 12px;
+        padding: 10px;
         font-size: 18px;
         transition: 0.2s;
     }
@@ -84,16 +99,12 @@ st.markdown("""
         box-shadow: 0 0 20px #00f0ff;
     }
 
-    /* SLIDER FIX - This ensures the slider handle is visible */
-    div[data-testid="stSlider"] > div {
-        height: 20px;
-    }
-    
+    /* HIDE DEFAULT HEADER */
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. STATE ---
+# --- 3. SESSION STATE ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
@@ -126,29 +137,34 @@ def start_game(mode):
 
 def get_feedback(guess, target):
     diff = abs(target - guess)
+    # --- EASY MODE ZONES ---
     if diff == 0: return "YOU GUESSED IT RIGHT!", "#39ff14", "win"
-    elif diff <= 3: return "CRITICAL (BURNING HOT!!)", "#ff073a", "scan"
+    elif diff <= 4: return "CRITICAL (BURNING HOT!!)", "#ff073a", "scan"
     elif diff <= 12: return "VERY CLOSE (HOT)", "#ff4500", "scan"
     elif diff <= 25: return "SIGNAL DETECTED (WARM)", "#ffd700", "scan"
     elif diff <= 40: return "WEAK SIGNAL (COOL)", "#00bfff", "scan"
     else: return "NO SIGNAL (FAR)", "#bf00ff", "error"
 
 def scan(guess):
-    with st.spinner("ANALYZING..."):
-        time.sleep(0.15) 
+    # Scan Animation
+    with st.spinner("ANALYZING FREQUENCY..."):
+        time.sleep(0.2) 
 
-    cost = 2 # Easy cost
+    # Low Cost Scanning
+    cost = 2
     if st.session_state.mode == "SURVIVAL": cost = 5
     st.session_state.fuel -= cost
     
+    # Win Check
     if guess == st.session_state.target:
         st.session_state.msg_main = "YOU GUESSED IT RIGHT!"
-        st.session_state.msg_sub = f"TARGET: {st.session_state.target} // EXCELLENT WORK"
+        st.session_state.msg_sub = f"TARGET LOCKED: {st.session_state.target} // EXCELLENT WORK"
         st.session_state.color = "#39ff14"
         st.session_state.sound = "win"
         st.balloons()
         return
 
+    # Loss Check
     if st.session_state.fuel <= 0:
         st.session_state.msg_main = "MISSION FAILED"
         st.session_state.msg_sub = f"HIDDEN TARGET WAS: {st.session_state.target}"
@@ -156,6 +172,7 @@ def scan(guess):
         st.session_state.sound = "error"
         return
 
+    # Feedback
     main, col, snd = get_feedback(guess, st.session_state.target)
     
     if guess < st.session_state.target: sub = "TRY HIGHER ↑"
@@ -182,24 +199,27 @@ def buy_intel():
 
 # --- 5. UI LAYOUT ---
 
-# --- LEFT SLIDING OPTIONS (SIDEBAR) ---
+# --- SIDEBAR (Left Sliding Options) ---
 with st.sidebar:
-    st.markdown("## ⚙️ COMMAND SETTINGS")
+    st.markdown("## ⚙️ SETTINGS")
+    st.write("")
+    
+    # Audio Toggle
+    st.session_state.sound_on = st.toggle("🔊 AUDIO ON/OFF", value=True)
     
     st.write("---")
-    st.session_state.sound_on = st.toggle("🔊 SOUND EFFECTS", value=True)
     
-    st.write("---")
-    if st.button("🔄 RESTART MISSION"):
+    # Reset Button in Sidebar
+    if st.button("🔄 RESTART GAME"):
         st.session_state.game_active = False
         st.rerun()
-        
-    st.markdown("### 📘 INSTRUCTIONS")
+
+    st.markdown("### 📘 HOW TO PLAY")
     st.info("""
-    1. **Scan Frequencies** to find the target.
-    2. **Hot/Cold** signals guide you.
-    3. **Fuel** drops with every scan.
-    4. **Intel** costs fuel but gives big hints.
+    1. **Guess the Frequency** (1-100).
+    2. **Hot/Cold** tells you distance.
+    3. **Fuel** drops by 2% per scan.
+    4. **Win** by finding the exact number!
     """)
 
 # --- MAIN SCREEN ---
@@ -213,40 +233,51 @@ st.markdown("<h1 style='text-align:center; color:#00f0ff;'>COSMIC COMMAND</h1>",
 if not st.session_state.game_active:
     # START SCREEN
     st.markdown("<h3 style='text-align:center; color:#666;'>SELECT DIFFICULTY</h3>", unsafe_allow_html=True)
+    
     c1, c2, c3 = st.columns(3)
     if c1.button("EXPLORE (EASY)"): start_game("EXPLORATION")
     if c2.button("SURVIVAL (HARD)"): start_game("SURVIVAL")
     if c3.button("QUANTUM (CHAOS)"): start_game("QUANTUM")
 
 else:
-    # GAME DISPLAY
+    # GAME SCREEN
+    
+    # Dynamic Styling for Winner
+    box_class = "cosmic-display"
+    text_class = ""
+    if "RIGHT" in st.session_state.msg_main:
+        box_class += " winner-box"
+        text_class = "winner-text"
+
     st.markdown(f"""
-    <div class='cosmic-display' style='border-color: {st.session_state.color};'>
-        <h2 style='color: {st.session_state.color}; margin:0; font-size:36px;'>{st.session_state.msg_main}</h2>
+    <div class='{box_class}' style='border-color: {st.session_state.color};'>
+        <div class='{text_class}' style='color: {st.session_state.color}; font-size:36px; margin:0;'>
+            {st.session_state.msg_main}
+        </div>
         <p style='color: #aaa; margin-top:5px; font-size:18px;'>{st.session_state.msg_sub}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # FUEL BAR
+    # Fuel Bar
     fuel_pct = max(0, st.session_state.fuel) / 100.0
     st.progress(fuel_pct)
     st.caption(f"HYPERFUEL: {max(0, st.session_state.fuel)}%")
 
-    # CONTROLS
+    # Controls
     if st.session_state.fuel > 0 and "RIGHT" not in st.session_state.msg_main:
         st.write("---")
         
-        # INPUT SWITCHER
+        # Input Method Toggles
         c_tog1, c_tog2 = st.columns(2)
-        if c_tog1.button("🎚️ SLIDER INPUT"): st.session_state.input_type = "SLIDER"
-        if c_tog2.button("⌨️ KEYPAD INPUT"): st.session_state.input_type = "KEYPAD"
+        if c_tog1.button("🎚️ SLIDER"): st.session_state.input_type = "SLIDER"
+        if c_tog2.button("⌨️ KEYPAD"): st.session_state.input_type = "KEYPAD"
         
         st.write("") # Spacer
-
-        # DYNAMIC INPUT
+        
+        # INPUTS
         guess = 50
         if st.session_state.input_type == "SLIDER":
-            # The Slider should now be perfectly visible
+            # Native Slider - styling issues removed to ensure visibility
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
@@ -264,9 +295,9 @@ else:
 
         if st.session_state.intel_txt:
             st.info(st.session_state.intel_txt)
-
+            
     else:
-        # PLAY AGAIN
+        # PLAY AGAIN BUTTON
         st.write("---")
         if st.button("🔄 REBOOT SYSTEM (PLAY AGAIN)"):
             st.session_state.game_active = False
