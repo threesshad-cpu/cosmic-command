@@ -10,16 +10,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 1. SOUND ENGINE (SPECIFIC ALERTS ONLY) ---
+# --- 1. CUSTOM CONFETTI GENERATOR ---
+# This function creates 100 small HTML divs with random colors and trajectories
+# that explode upwards, simulating a party popper.
+def trigger_party_confetti():
+    confetti_html = ""
+    colors = ['#ff0000', '#0000ff', '#ffff00', '#00ff00', '#ff00ff'] # Party colors
+    
+    for i in range(100): # Generate 100 pieces
+        left_pos = random.randint(0, 100)
+        anim_delay = random.uniform(0, 0.5)
+        color = random.choice(colors)
+        # Randomize rotation direction
+        rot = random.randint(-720, 720)
+        
+        confetti_html += f"""
+        <div class="confetti" style="
+            left: {left_pos}vw; 
+            animation-delay: {anim_delay}s; 
+            background-color: {color};
+            --rot-end: {rot}deg;">
+        </div>
+        """
+    
+    # Inject the HTML blob
+    st.markdown(f"<div>{confetti_html}</div>", unsafe_allow_html=True)
+
+
+# --- 2. SOUND ENGINE ---
 def play_sound(sound_type):
     if not st.session_state.get('sound_on', True): return
 
     sounds = {
-        # Initiating / Restart
         "start": "https://www.soundjay.com/buttons/button-10.mp3",
-        # Target Unlocked / Excellent
         "win": "https://www.soundjay.com/misc/success-bell-01.mp3",
-        # Error (only for critical failures)
         "error": "https://www.soundjay.com/buttons/button-42.mp3"
     }
     if sound_type in sounds:
@@ -29,10 +53,39 @@ def play_sound(sound_type):
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 2. CSS STYLING ---
+# --- 3. CSS STYLING (WITH NEW ANIMATIONS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+
+    /* --- CUSTOM PARTY CONFETTI ANIMATION --- */
+    .confetti {
+        position: fixed;
+        bottom: -10px; /* Start just off-screen bottom */
+        width: 10px;
+        height: 20px; /* Rectangular streamer shape */
+        opacity: 1;
+        z-index: 9999;
+        pointer-events: none; /* Let clicks pass through */
+        animation: explode-up 2.5s ease-out forwards;
+    }
+
+    @keyframes explode-up {
+        0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+        }
+        80% {
+             opacity: 1;
+        }
+        100% {
+            /* Move up 80% of screen height and rotate */
+            transform: translateY(-80vh) rotate(var(--rot-end));
+            opacity: 0; /* Fade out at top */
+        }
+    }
+    /* --------------------------------------- */
+
 
     /* BACKGROUND */
     .stApp {
@@ -102,7 +155,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. STATE ---
+# --- 4. STATE ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
@@ -115,8 +168,9 @@ if 'sound' not in st.session_state: st.session_state.sound = None
 if 'mode' not in st.session_state: st.session_state.mode = "EXPLORATION"
 if 'max_val' not in st.session_state: st.session_state.max_val = 100
 if 'sound_on' not in st.session_state: st.session_state.sound_on = True
+if 'trigger_confetti' not in st.session_state: st.session_state.trigger_confetti = False
 
-# --- 4. LOGIC ---
+# --- 5. LOGIC ---
 def start_game(mode):
     st.session_state.game_active = True
     st.session_state.mode = mode
@@ -132,10 +186,10 @@ def start_game(mode):
     st.session_state.color = "#00f0ff"
     st.session_state.intel_txt = ""
     st.session_state.sound = "start"
+    st.session_state.trigger_confetti = False
 
 def get_feedback(guess, target):
     diff = abs(target - guess)
-    # --- EASY MODE ZONES ---
     if diff == 0: return "YOU GUESSED IT RIGHT!", "#39ff14", "win"
     elif diff <= 4: return "CRITICAL (BURNING HOT!!)", "#ff073a", "scan"
     elif diff <= 12: return "VERY CLOSE (HOT)", "#ff4500", "scan"
@@ -144,17 +198,17 @@ def get_feedback(guess, target):
     else: return "NO SIGNAL (FAR)", "#bf00ff", "error"
 
 def scan(guess):
-    # --- INSTANT WIN CHECK (NO DELAY) ---
+    # INSTANT WIN CHECK
     if guess == st.session_state.target:
         st.session_state.msg_main = "YOU GUESSED IT RIGHT!"
         st.session_state.msg_sub = f"TARGET LOCKED: {st.session_state.target} // EXCELLENT WORK"
         st.session_state.color = "#39ff14"
         st.session_state.sound = "win"
-        st.balloons() # The Party!
-        st.snow()     # Extra Confetti!
+        # TRIGGER CUSTOM CONFETTI
+        st.session_state.trigger_confetti = True
         return
 
-    # Only delay if it's NOT a win (for suspense)
+    # Delay only on non-wins
     with st.spinner("ANALYZING..."):
         time.sleep(0.15) 
 
@@ -181,8 +235,7 @@ def scan(guess):
     st.session_state.msg_main = main
     st.session_state.msg_sub = sub
     st.session_state.color = col
-    # We suppress the scan sound here to keep it quiet as requested
-    # Only "Win" and "Error" sounds play now.
+    # No sound on normal scans per request
 
 def buy_intel():
     if st.session_state.fuel >= 10:
@@ -196,20 +249,17 @@ def buy_intel():
         st.session_state.intel_txt = "❌ NOT ENOUGH FUEL (Need 10%)"
         st.session_state.sound = "error"
 
-# --- 5. UI LAYOUT ---
+# --- 6. UI RENDERING ---
 
-# --- LEFT MENU (SIMPLIFIED) ---
+# SIDEBAR
 with st.sidebar:
     st.markdown("## 🚀 MENU")
-    
     st.session_state.sound_on = st.toggle("🔊 SOUNDS", value=True)
-    
     st.write("---")
     if st.button("🔄 RESTART GAME"):
         st.session_state.game_active = False
         st.session_state.sound = "start"
         st.rerun()
-
     st.markdown("### 📝 MISSION BRIEF")
     st.info("""
     * **Objective:** Find the hidden number.
@@ -217,11 +267,15 @@ with st.sidebar:
     * **Win:** Get "Target Unlocked!"
     """)
 
-# --- MAIN SCREEN ---
-
+# MAIN SCREEN
 if st.session_state.sound:
     play_sound(st.session_state.sound)
     st.session_state.sound = None
+
+# --- CONFETTI TRIGGER ---
+if st.session_state.trigger_confetti:
+    trigger_party_confetti()
+    st.session_state.trigger_confetti = False # Run once
 
 st.markdown("<h1 style='text-align:center; color:#00f0ff;'>COSMIC COMMAND</h1>", unsafe_allow_html=True)
 
@@ -235,8 +289,6 @@ if not st.session_state.game_active:
 
 else:
     # GAME SCREEN
-    
-    # Dynamic Styling for Winner
     if "RIGHT" in st.session_state.msg_main:
         st.markdown(f"""
         <div class='cosmic-display' style='border-color: #39ff14; box-shadow: 0 0 40px #39ff14;'>
@@ -252,32 +304,24 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-    # Fuel Bar
     fuel_pct = max(0, st.session_state.fuel) / 100.0
     st.progress(fuel_pct)
     st.caption(f"HYPERFUEL: {max(0, st.session_state.fuel)}%")
 
-    # Controls
     if st.session_state.fuel > 0 and "RIGHT" not in st.session_state.msg_main:
         st.write("---")
-        
-        # Input Method Toggles
         c_tog1, c_tog2 = st.columns(2)
         if c_tog1.button("🎚️ SLIDER"): st.session_state.input_type = "SLIDER"
         if c_tog2.button("⌨️ KEYPAD"): st.session_state.input_type = "KEYPAD"
+        st.write("")
         
-        st.write("") # Spacer
-        
-        # INPUTS
         guess = 50
         if st.session_state.input_type == "SLIDER":
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
 
-        st.write("") # Spacer
-
-        # ACTION BUTTONS
+        st.write("")
         c_act1, c_act2 = st.columns([2,1])
         with c_act1:
             if st.button("INITIATE SCAN", type="primary"):
@@ -290,7 +334,6 @@ else:
             st.info(st.session_state.intel_txt)
             
     else:
-        # PLAY AGAIN BUTTON
         st.write("---")
         if st.button("🔄 REBOOT SYSTEM (PLAY AGAIN)"):
             st.session_state.game_active = False
