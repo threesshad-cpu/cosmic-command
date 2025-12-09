@@ -7,14 +7,12 @@ st.set_page_config(
     page_title="COSMIC COMMAND: FINAL",
     page_icon="🚀",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded" # This opens the Left Sidebar automatically
 )
 
 # --- 1. SOUND ENGINE ---
 def play_sound(sound_type):
-    # Only play if sound is ON
-    if not st.session_state.get('sound_on', True):
-        return
+    if not st.session_state.get('sound_on', True): return
 
     sounds = {
         "start": "https://www.soundjay.com/buttons/button-10.mp3",
@@ -30,13 +28,12 @@ def play_sound(sound_type):
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 2. CSS STYLING (SAFE VERSION) ---
+# --- 2. CSS STYLING (SLIDER FIXED) ---
 st.markdown("""
     <style>
-    /* IMPORT FONTS */
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
 
-    /* BACKGROUND ANIMATION */
+    /* BACKGROUND */
     .stApp {
         background-color: #050508;
         background-image: 
@@ -50,11 +47,11 @@ st.markdown("""
         to { background-position: 1000px 1000px, 1040px 1060px; }
     }
 
-    /* TEXT STYLING */
+    /* FONTS */
     h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
-    div, p, button, span { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; letter-spacing: 1px; }
+    div, p, button, span, li { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; letter-spacing: 1px; }
 
-    /* NEON DISPLAY BOX */
+    /* NEON DISPLAY */
     .cosmic-display {
         background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 20, 30, 0.95));
         border: 2px solid #00f0ff;
@@ -65,14 +62,11 @@ st.markdown("""
         box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
     }
     
-    /* WINNER TEXT STYLE */
-    .winner-box {
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 30px #39ff14 !important;
-    }
+    /* BIG GREEN WINNER TEXT */
     .winner-text {
         color: #39ff14 !important;
-        font-size: 40px !important;
+        font-size: 42px !important;
+        font-weight: 900 !important;
         text-shadow: 0 0 20px #39ff14;
         animation: pulse 1s infinite;
     }
@@ -82,14 +76,14 @@ st.markdown("""
         100% { transform: scale(1); }
     }
 
-    /* CUSTOM BUTTONS */
+    /* BUTTONS */
     div.stButton > button {
         background: #0a0a0f;
         color: #00f0ff;
         border: 1px solid #00f0ff;
         width: 100%;
         border-radius: 5px;
-        padding: 10px;
+        padding: 12px;
         font-size: 18px;
         transition: 0.2s;
     }
@@ -99,12 +93,16 @@ st.markdown("""
         box-shadow: 0 0 20px #00f0ff;
     }
 
-    /* HIDE DEFAULT HEADER */
+    /* --- SLIDER FIX --- */
+    /* This makes the slider handle (thumb) big and visible */
+    div[data-testid="stThumbValue"] { font-family: 'Rajdhani', sans-serif !important; font-size: 14px; }
+    div[role="slider"] { background-color: #00f0ff !important; border: 2px solid white; height: 20px; width: 20px; }
+    
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE ---
+# --- 3. STATE ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
@@ -199,25 +197,25 @@ def buy_intel():
 
 # --- 5. UI LAYOUT ---
 
-# --- SIDEBAR (Left Sliding Options) ---
+# --- SIDEBAR (LEFT MENU) ---
 with st.sidebar:
-    st.markdown("## ⚙️ SETTINGS")
-    st.write("")
+    st.markdown("## 🚀 COMMAND DECK")
+    st.write("---")
     
-    # Audio Toggle
-    st.session_state.sound_on = st.toggle("🔊 AUDIO ON/OFF", value=True)
+    # Toggle Sound
+    st.session_state.sound_on = st.toggle("🔊 SOUND EFFECTS", value=True)
     
     st.write("---")
     
-    # Reset Button in Sidebar
+    # Reset
     if st.button("🔄 RESTART GAME"):
         st.session_state.game_active = False
         st.rerun()
 
-    st.markdown("### 📘 HOW TO PLAY")
+    st.markdown("### 📘 MISSION BRIEF")
     st.info("""
-    1. **Guess the Frequency** (1-100).
-    2. **Hot/Cold** tells you distance.
+    1. **Scan Frequencies** using the Slider.
+    2. **Hot/Cold** hints guide you to the target.
     3. **Fuel** drops by 2% per scan.
     4. **Win** by finding the exact number!
     """)
@@ -233,7 +231,6 @@ st.markdown("<h1 style='text-align:center; color:#00f0ff;'>COSMIC COMMAND</h1>",
 if not st.session_state.game_active:
     # START SCREEN
     st.markdown("<h3 style='text-align:center; color:#666;'>SELECT DIFFICULTY</h3>", unsafe_allow_html=True)
-    
     c1, c2, c3 = st.columns(3)
     if c1.button("EXPLORE (EASY)"): start_game("EXPLORATION")
     if c2.button("SURVIVAL (HARD)"): start_game("SURVIVAL")
@@ -243,20 +240,20 @@ else:
     # GAME SCREEN
     
     # Dynamic Styling for Winner
-    box_class = "cosmic-display"
-    text_class = ""
     if "RIGHT" in st.session_state.msg_main:
-        box_class += " winner-box"
-        text_class = "winner-text"
-
-    st.markdown(f"""
-    <div class='{box_class}' style='border-color: {st.session_state.color};'>
-        <div class='{text_class}' style='color: {st.session_state.color}; font-size:36px; margin:0;'>
-            {st.session_state.msg_main}
+        st.markdown(f"""
+        <div class='cosmic-display' style='border-color: #39ff14; box-shadow: 0 0 40px #39ff14;'>
+            <div class='winner-text'>{st.session_state.msg_main}</div>
+            <div style='color: #fff; letter-spacing: 2px; margin-top: 10px;'>{st.session_state.msg_sub}</div>
         </div>
-        <p style='color: #aaa; margin-top:5px; font-size:18px;'>{st.session_state.msg_sub}</p>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class='cosmic-display' style='border-color: {st.session_state.color};'>
+            <h2 style='color: {st.session_state.color}; margin:0; font-size:36px;'>{st.session_state.msg_main}</h2>
+            <p style='color: #aaa; margin-top:5px; font-size:18px;'>{st.session_state.msg_sub}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Fuel Bar
     fuel_pct = max(0, st.session_state.fuel) / 100.0
@@ -277,7 +274,7 @@ else:
         # INPUTS
         guess = 50
         if st.session_state.input_type == "SLIDER":
-            # Native Slider - styling issues removed to ensure visibility
+            # Native Slider - Fixed Visibility
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
