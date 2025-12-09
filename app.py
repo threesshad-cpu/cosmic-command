@@ -279,7 +279,7 @@ else:
     if st.session_state.last_diff == 0:
         # VICTORY SCENE
         play_sound("win")
-        st.balloons() # <--- RELIABLE CELEBRATION
+        st.lottie() # <--- RELIABLE CELEBRATION
         
         st.markdown(f"""
         <div style="border: 4px solid #00FF00; box-shadow: 0px 0px 50px #00FF00; background-color: black; border-radius: 10px; padding: 40px; text-align: center; margin-bottom: 20px;">
