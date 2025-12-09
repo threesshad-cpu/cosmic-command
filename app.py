@@ -1,41 +1,44 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import random
 import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="COSMIC COMMAND",
+    page_title="COSMIC COMMAND: FINAL",
     page_icon="🚀",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# --- 1. PARTY POPPER (JAVASCRIPT) ---
-def trigger_party():
-    components.html(
+# --- 1. CUSTOM CONFETTI GENERATOR ---
+# This function creates 100 small HTML divs with random colors and trajectories
+# that explode upwards, simulating a party popper.
+def trigger_party_confetti():
+    confetti_html = ""
+    colors = ['#ff0000', '#0000ff', '#ffff00', '#00ff00', '#ff00ff'] # Party colors
+    
+    for i in range(100): # Generate 100 pieces
+        left_pos = random.randint(0, 100)
+        anim_delay = random.uniform(0, 0.5)
+        color = random.choice(colors)
+        # Randomize rotation direction
+        rot = random.randint(-720, 720)
+        
+        confetti_html += f"""
+        <div class="confetti" style="
+            left: {left_pos}vw; 
+            animation-delay: {anim_delay}s; 
+            background-color: {color};
+            --rot-end: {rot}deg;">
+        </div>
         """
-        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-        <script>
-            var duration = 3 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-            function randomInOut(min, max) { return Math.random() * (max - min) + min; }
-            var interval = setInterval(function() {
-              var timeLeft = animationEnd - Date.now();
-              if (timeLeft <= 0) { return clearInterval(interval); }
-              var particleCount = 50 * (timeLeft / duration);
-              confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInOut(0.1, 0.3), y: Math.random() - 0.2 } }));
-              confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInOut(0.7, 0.9), y: Math.random() - 0.2 } }));
-            }, 250);
-        </script>
-        """,
-        height=0, width=0
-    )
+    
+    # Inject the HTML blob
+    st.markdown(f"<div>{confetti_html}</div>", unsafe_allow_html=True)
+
 
 # --- 2. SOUND ENGINE ---
-def play_sound(sound_name):
-    # Only plays if sound is toggled ON
+def play_sound(sound_type):
     if not st.session_state.get('sound_on', True): return
 
     sounds = {
@@ -43,74 +46,131 @@ def play_sound(sound_name):
         "win": "https://www.soundjay.com/misc/success-bell-01.mp3",
         "error": "https://www.soundjay.com/buttons/button-42.mp3"
     }
-    if sound_name in sounds:
-        # Invisible audio element
+    if sound_type in sounds:
         st.markdown(f"""
             <audio autoplay>
-                <source src="{sounds[sound_name]}" type="audio/mp3">
+                <source src="{sounds[sound_type]}" type="audio/mp3">
             </audio>
             """, unsafe_allow_html=True)
 
-# --- 3. CSS (ONLY BACKGROUND & FONTS - NO WIDGET STYLING) ---
+# --- 3. CSS STYLING (WITH NEW ANIMATIONS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
 
-    /* DARK BACKGROUND */
+    /* --- CUSTOM PARTY CONFETTI ANIMATION --- */
+    .confetti {
+        position: fixed;
+        bottom: -10px; /* Start just off-screen bottom */
+        width: 10px;
+        height: 20px; /* Rectangular streamer shape */
+        opacity: 1;
+        z-index: 9999;
+        pointer-events: none; /* Let clicks pass through */
+        animation: explode-up 2.5s ease-out forwards;
+    }
+
+    @keyframes explode-up {
+        0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+        }
+        80% {
+             opacity: 1;
+        }
+        100% {
+            /* Move up 80% of screen height and rotate */
+            transform: translateY(-80vh) rotate(var(--rot-end));
+            opacity: 0; /* Fade out at top */
+        }
+    }
+    /* --------------------------------------- */
+
+
+    /* BACKGROUND */
     .stApp {
         background-color: #050508;
         background-image: 
             radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
             radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
         background-size: 550px 550px, 350px 350px;
+        animation: star-move 120s linear infinite;
+    }
+    @keyframes star-move {
+        from { background-position: 0 0, 40px 60px; }
+        to { background-position: 1000px 1000px, 1040px 1060px; }
     }
 
-    /* NEON TEXT HEADERS */
-    h1, h2, h3 { 
-        font-family: 'Orbitron', sans-serif !important; 
-        color: #00f0ff !important;
-        text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); 
-    }
-    
-    /* GAME DISPLAY BOX */
+    /* FONTS */
+    h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
+    div, p, button, span, li { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; letter-spacing: 1px; }
+
+    /* NEON DISPLAY */
     .cosmic-display {
-        background: rgba(20, 20, 30, 0.9);
+        background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 20, 30, 0.95));
         border: 2px solid #00f0ff;
-        border-radius: 10px;
+        border-radius: 15px;
         padding: 20px;
         text-align: center;
         margin-bottom: 20px;
+        box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
     }
     
     /* WINNER TEXT */
     .winner-text {
         color: #39ff14 !important;
-        font-size: 35px !important;
+        font-size: 45px !important;
         font-weight: 900 !important;
-        font-family: 'Orbitron', sans-serif !important;
         text-shadow: 0 0 20px #39ff14;
+        animation: pulse 0.5s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
     }
 
-    /* HIDE HEADER/FOOTER */
+    /* BUTTONS */
+    div.stButton > button {
+        background: #0a0a0f;
+        color: #00f0ff;
+        border: 1px solid #00f0ff;
+        width: 100%;
+        border-radius: 5px;
+        padding: 12px;
+        font-size: 18px;
+        transition: 0.2s;
+    }
+    div.stButton > button:hover {
+        background: #00f0ff;
+        color: black;
+        box-shadow: 0 0 20px #00f0ff;
+    }
+
+    /* SLIDER FIX */
+    div[data-testid="stThumbValue"] { font-family: 'Rajdhani', sans-serif !important; font-size: 14px; }
+    div[role="slider"] { background-color: #00f0ff !important; border: 2px solid white; height: 20px; width: 20px; }
+    
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. SESSION STATE SETUP ---
+# --- 4. STATE ---
 if 'game_active' not in st.session_state: st.session_state.game_active = False
 if 'target' not in st.session_state: st.session_state.target = 50
 if 'fuel' not in st.session_state: st.session_state.fuel = 100
 if 'msg_main' not in st.session_state: st.session_state.msg_main = "SYSTEM ONLINE"
 if 'msg_sub' not in st.session_state: st.session_state.msg_sub = "READY TO START"
 if 'color' not in st.session_state: st.session_state.color = "#00f0ff"
+if 'input_type' not in st.session_state: st.session_state.input_type = "SLIDER"
 if 'intel_txt' not in st.session_state: st.session_state.intel_txt = ""
 if 'sound' not in st.session_state: st.session_state.sound = None
 if 'mode' not in st.session_state: st.session_state.mode = "EXPLORATION"
 if 'max_val' not in st.session_state: st.session_state.max_val = 100
 if 'sound_on' not in st.session_state: st.session_state.sound_on = True
-if 'trigger_party' not in st.session_state: st.session_state.trigger_party = False
+if 'trigger_confetti' not in st.session_state: st.session_state.trigger_confetti = False
 
-# --- 5. GAME FUNCTIONS ---
+# --- 5. LOGIC ---
 def start_game(mode):
     st.session_state.game_active = True
     st.session_state.mode = mode
@@ -126,12 +186,12 @@ def start_game(mode):
     st.session_state.color = "#00f0ff"
     st.session_state.intel_txt = ""
     st.session_state.sound = "start"
-    st.session_state.trigger_party = False
+    st.session_state.trigger_confetti = False
 
 def get_feedback(guess, target):
     diff = abs(target - guess)
-    if diff == 0: return "SUCCESS!", "#39ff14", "win"
-    elif diff <= 4: return "CRITICAL (HOT!!)", "#ff073a", "scan"
+    if diff == 0: return "YOU GUESSED IT RIGHT!", "#39ff14", "win"
+    elif diff <= 4: return "CRITICAL (BURNING HOT!!)", "#ff073a", "scan"
     elif diff <= 12: return "VERY CLOSE (HOT)", "#ff4500", "scan"
     elif diff <= 25: return "SIGNAL DETECTED (WARM)", "#ffd700", "scan"
     elif diff <= 40: return "WEAK SIGNAL (COOL)", "#00bfff", "scan"
@@ -144,19 +204,20 @@ def scan(guess):
         st.session_state.msg_sub = f"TARGET LOCKED: {st.session_state.target} // EXCELLENT WORK"
         st.session_state.color = "#39ff14"
         st.session_state.sound = "win"
-        st.session_state.trigger_party = True
+        # TRIGGER CUSTOM CONFETTI
+        st.session_state.trigger_confetti = True
         return
 
-    # ANIMATION DELAY
-    with st.spinner("SCANNING..."):
+    # Delay only on non-wins
+    with st.spinner("ANALYZING..."):
         time.sleep(0.15) 
 
-    # FUEL COST
+    # Low Cost Scanning
     cost = 2
     if st.session_state.mode == "SURVIVAL": cost = 5
     st.session_state.fuel -= cost
 
-    # LOSS CHECK
+    # Loss Check
     if st.session_state.fuel <= 0:
         st.session_state.msg_main = "MISSION FAILED"
         st.session_state.msg_sub = f"HIDDEN TARGET WAS: {st.session_state.target}"
@@ -164,7 +225,7 @@ def scan(guess):
         st.session_state.sound = "error"
         return
 
-    # FEEDBACK
+    # Feedback
     main, col, snd = get_feedback(guess, st.session_state.target)
     
     if guess < st.session_state.target: sub = "TRY HIGHER ↑"
@@ -174,6 +235,7 @@ def scan(guess):
     st.session_state.msg_main = main
     st.session_state.msg_sub = sub
     st.session_state.color = col
+    # No sound on normal scans per request
 
 def buy_intel():
     if st.session_state.fuel >= 10:
@@ -187,110 +249,93 @@ def buy_intel():
         st.session_state.intel_txt = "❌ NOT ENOUGH FUEL (Need 10%)"
         st.session_state.sound = "error"
 
-# --- 6. LAYOUT ---
+# --- 6. UI RENDERING ---
 
-# --- SIDEBAR MENU ---
+# SIDEBAR
 with st.sidebar:
-    st.header("⚙️ SETTINGS")
-    st.session_state.sound_on = st.checkbox("Enable Sounds", value=True)
-    
+    st.markdown("## 🚀 MENU")
+    st.session_state.sound_on = st.toggle("🔊 SOUNDS", value=True)
     st.write("---")
-    if st.button("🔄 RESTART GAME", use_container_width=True):
+    if st.button("🔄 RESTART GAME"):
         st.session_state.game_active = False
         st.session_state.sound = "start"
         st.rerun()
-
-    st.header("📝 HOW TO PLAY")
+    st.markdown("### 📝 MISSION BRIEF")
     st.info("""
-    1. **Objective:** Find the hidden number.
-    2. **Hot/Cold:** - 🔴 **Hot:** You are close.
-       - 🔵 **Cold:** You are far.
-    3. **Fuel:** Every scan costs fuel.
-    4. **Win:** Find the exact number!
+    * **Objective:** Find the hidden number.
+    * **Hot/Cold:** Guides you closer.
+    * **Win:** Get "Target Unlocked!"
     """)
 
-# --- MAIN GAME SCREEN ---
-
-# Play sound if triggered
+# MAIN SCREEN
 if st.session_state.sound:
     play_sound(st.session_state.sound)
     st.session_state.sound = None
 
-# Trigger Confetti if won
-if st.session_state.trigger_party:
-    trigger_party()
-    st.session_state.trigger_party = False
+# --- CONFETTI TRIGGER ---
+if st.session_state.trigger_confetti:
+    trigger_party_confetti()
+    st.session_state.trigger_confetti = False # Run once
 
-st.title("COSMIC COMMAND")
+st.markdown("<h1 style='text-align:center; color:#00f0ff;'>COSMIC COMMAND</h1>", unsafe_allow_html=True)
 
 if not st.session_state.game_active:
-    # --- START SCREEN ---
-    st.subheader("SELECT DIFFICULTY")
+    # START SCREEN
+    st.markdown("<h3 style='text-align:center; color:#666;'>SELECT DIFFICULTY</h3>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    if c1.button("EXPLORE (EASY)", use_container_width=True): start_game("EXPLORATION")
-    if c2.button("SURVIVAL (HARD)", use_container_width=True): start_game("SURVIVAL")
-    if c3.button("QUANTUM (CHAOS)", use_container_width=True): start_game("QUANTUM")
+    if c1.button("EXPLORE (EASY)"): start_game("EXPLORATION")
+    if c2.button("SURVIVAL (HARD)"): start_game("SURVIVAL")
+    if c3.button("QUANTUM (CHAOS)"): start_game("QUANTUM")
 
 else:
-    # --- GAME SCREEN ---
-    
-    # 1. DISPLAY BOX
+    # GAME SCREEN
     if "RIGHT" in st.session_state.msg_main:
-        # WINNER STYLE
         st.markdown(f"""
-        <div class='cosmic-display' style='border-color: #39ff14; box-shadow: 0 0 30px #39ff14;'>
+        <div class='cosmic-display' style='border-color: #39ff14; box-shadow: 0 0 40px #39ff14;'>
             <div class='winner-text'>{st.session_state.msg_main}</div>
-            <div style='color: white; margin-top: 10px;'>{st.session_state.msg_sub}</div>
+            <div style='color: #fff; letter-spacing: 2px; margin-top: 10px; font-size: 20px;'>{st.session_state.msg_sub}</div>
         </div>
         """, unsafe_allow_html=True)
     else:
-        # NORMAL STYLE
         st.markdown(f"""
         <div class='cosmic-display' style='border-color: {st.session_state.color};'>
-            <h2 style='color: {st.session_state.color}; margin:0;'>{st.session_state.msg_main}</h2>
-            <p style='color: #ccc; margin-top:5px; font-size: 18px;'>{st.session_state.msg_sub}</p>
+            <h2 style='color: {st.session_state.color}; margin:0; font-size:36px;'>{st.session_state.msg_main}</h2>
+            <p style='color: #aaa; margin-top:5px; font-size:18px;'>{st.session_state.msg_sub}</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # 2. FUEL BAR
-    st.progress(max(0, st.session_state.fuel) / 100.0)
+    fuel_pct = max(0, st.session_state.fuel) / 100.0
+    st.progress(fuel_pct)
     st.caption(f"HYPERFUEL: {max(0, st.session_state.fuel)}%")
 
-    # 3. CONTROLS
     if st.session_state.fuel > 0 and "RIGHT" not in st.session_state.msg_main:
         st.write("---")
-        
-        # INPUT TYPE SELECTION
-        input_mode = st.radio("SELECT INPUT:", ["SLIDER", "KEYPAD"], horizontal=True)
-        
+        c_tog1, c_tog2 = st.columns(2)
+        if c_tog1.button("🎚️ SLIDER"): st.session_state.input_type = "SLIDER"
+        if c_tog2.button("⌨️ KEYPAD"): st.session_state.input_type = "KEYPAD"
         st.write("")
         
-        # THE SLIDER (Standard Streamlit Widget - No Custom CSS)
         guess = 50
-        if input_mode == "SLIDER":
+        if st.session_state.input_type == "SLIDER":
             guess = st.slider("TUNING FREQUENCY", 1, st.session_state.max_val, 50)
         else:
             guess = st.number_input("ENTER COORDINATES", 1, st.session_state.max_val, 50)
 
         st.write("")
-        
-        # ACTION BUTTONS
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            if st.button("INITIATE SCAN", type="primary", use_container_width=True):
+        c_act1, c_act2 = st.columns([2,1])
+        with c_act1:
+            if st.button("INITIATE SCAN", type="primary"):
                 scan(guess)
-        with col2:
-            if st.button("BUY INTEL (-10)", use_container_width=True):
+        with c_act2:
+            if st.button("BUY INTEL (-10)"):
                 buy_intel()
 
-        # INTEL MESSAGE
         if st.session_state.intel_txt:
             st.info(st.session_state.intel_txt)
             
     else:
-        # RESTART BUTTON
         st.write("---")
-        if st.button("🔄 PLAY AGAIN", type="primary", use_container_width=True):
+        if st.button("🔄 REBOOT SYSTEM (PLAY AGAIN)"):
             st.session_state.game_active = False
             st.session_state.sound = "start"
             st.rerun()
