@@ -234,7 +234,7 @@ elif st.session_state.page == "GAME":
         def adjust_guess(amount): 
             st.session_state.current_guess = max(1, min(100, st.session_state.current_guess + amount))
 
-        input_tab1, input_tab2, input_tab3 = st.tabs(["🎚️ Slider", "🔢 Digital", "🎮 Manual"])
+        input_tab1, input_tab2, input_tab3 = st.tabs(["🎚️ Slider", "🔢 Digital", "🎮 Manual(Recomm)"])
         
         with input_tab1:
             st.slider("Scan Frequency", 1, 100, key="slider_val", value=st.session_state.current_guess, on_change=update_guess_from_slider)
